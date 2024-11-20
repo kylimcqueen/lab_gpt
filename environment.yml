@@ -1,0 +1,5 @@
+name: lab_gpt_env
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+prefix: /opt/anaconda3/envs/lab_gpt_env
