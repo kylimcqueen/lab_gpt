@@ -5,14 +5,17 @@ from langchain_community.document_loaders import PyPDFLoader #to load documents
 from langchain_experimental.text_splitter import SemanticChunker #to split texts
 import chromadb #save split text documents for retrieval  
 
+
 #manually export the keys because dotenv is satan
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
 langchain_api_key = os.getenv("LANGCHAIN_API_KEY")
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 #Load and preprocess documents
-loader = PyPDFLoader("/Users/kyli/Downloads/Sleep Paper.pdf")
+loader = PyPDFLoader("/Users/kyli/Desktop/SQAT-Manual.pdf")
+
 #Load documents into a variable called documents, which is a list of document objects
 #Attributes of each document object are page_content and metadata
 documents = loader.load()
@@ -33,14 +36,24 @@ client = chromadb.Client()
 
 # Create a collection in Chroma (the actual database)
 collection = client.get_or_create_collection(name="my_collection")
-#Add each text chunk to the db
-collection.add(
-    documents=[doc.page_content for doc in split_docs],  # Extract text from splits
-    ids=[f"doc_{i}" for i in range(len(split_docs))]  # Generate unique IDs
-)
 
-results = collection.query(
-    query_texts=["This is a query document about outcome"], # Chroma will embed this for you
-    n_results=2 # how many results to return
+#Instantiate API endpoint for converting text into vector representations - embeddings
+client = OpenAI()
+
+
+def get_embeddings(texts, model="text-embedding-ada-002"):
+    """Generates embeddings for a list of texts using OpenAI."""
+    return [
+        client.embeddings.create(input=text, model=model).data[0].embedding
+        for text in texts
+    ]
+
+# Extract text chunks from split documents
+texts = [doc.page_content for doc in split_docs]
+embeddings = get_embeddings(texts)
+
+# Add embeddings to Chroma collection
+collection.add(
+    embeddings=embeddings,  # Add vector embeddings instead of raw text
+    ids=[f"doc_{i}" for i in range(len(embeddings))]
 )
-print(results)
