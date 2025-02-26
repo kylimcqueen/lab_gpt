@@ -1,5 +1,6 @@
 import os #for the environment file or variables
 from openai import OpenAI #for the LLM
+from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings #to use semanticchunker textsplitter
 from langchain_community.document_loaders import PyPDFLoader #to load documents
 from langchain_experimental.text_splitter import SemanticChunker #to split texts
@@ -57,3 +58,20 @@ collection.add(
     embeddings=embeddings,  # Add vector embeddings instead of raw text
     ids=[f"doc_{i}" for i in range(len(embeddings))]
 )
+
+
+chat = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0.2)
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a helpful assistant. Answer all questions to the best of your ability.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
+
+chain = prompt | chat
